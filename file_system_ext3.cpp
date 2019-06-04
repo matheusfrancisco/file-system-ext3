@@ -8,26 +8,33 @@ FILE* arquivo;
 int main(){
 
 	arquivo = fopen("PARTITION.bin", "rb+");
-	init(arquivo);
+	init_with_root(arquivo);
 	if(arquivo == NULL){
-		init(arquivo);
+		init_with_root(arquivo);
 	}
 
 }
 
-void init(FILE *file_system)
+void init_with_root(FILE *file_system)
 {
 
 	file_system = fopen("PARTITION.bin", "wb+" );
-	unsigned char tamanho_blocos = TAMANHO_BLOCO_DADOS;
+	unsigned char numero_size_block = N_SIZE_BLOCKS;
 	unsigned char numero_de_blocos = N_BLOCKS;
 	unsigned char numero_de_inodes = N_INODES;
 
 
-	fwrite(&tamanho_blocos, sizeof(unsigned char), 1,file_system);
-	fwrite(&numero_de_blocos, sizeof(unsigned char), 1,file_system);
-	fwrite(&numero_de_inodes, sizeof(unsigned char), 1,file_system);
-	fwrite(&block_map, sizeof(unsigned char), 1,file_system);
+	fwrite(&numero_size_block, sizeof(numero_size_block), 1,file_system);
+	fwrite(&numero_de_blocos, sizeof(numero_de_blocos), 1,file_system);
+	fwrite(&numero_de_inodes, sizeof(numero_de_inodes), 1,file_system);
+
+	block_map[0] = 1;
+	block_map[1] = 0;
+	block_map[2] = 0;
+	block_map[3] = 0;
+
+	fwrite(&block_map, sizeof(block_map), 1,file_system);
+	
 
 	for(int i =0; i<N_INODES;i++){
 		inode tmp;
@@ -35,27 +42,50 @@ void init(FILE *file_system)
 		tmp.is_used = 0;
 		tmp.is_dir  =0;
 		tmp.size=0;
-		//strcpy(tmp.name, "null");
-		for(int j=0; j<TAMANHO_BLOCO_DADOS; j++){
-			tmp.direct_blocks[i] = 0;
+		//if(i == 0 ){
+		//	strcpy(tmp.name, "/");
+		//}
+		for(int j=0; j<N_BLOCKS; j++){
+			tmp.direct_blocks[j] = 0;
 		}
 		fwrite(&tmp, sizeof(tmp), 1, file_system);
 	}
-	fseek_inode_to_root(file_system, 0);
+	unsigned char index_root = 0;
+	create_root(file_system);
+
+	fseek_inode(file_system, 13);
+
+	fwrite(&index_root, sizeof(index_root), 1, file_system);
+
+		
+
+		
+	fseek_inode(file_system, 14);
+
+	fwrite(&vet_block, sizeof(vet_block), 1, file_system);
+
+}
+
+void create_root(FILE * file_system){
+	fseek_inode(file_system,7);
+
 	inode tmp;
-	tmp.is_used = 0;
-	tmp.is_dir  =0;
+
+	tmp.is_used = 1;
+	tmp.is_dir  =1;
 	tmp.size=0;
+	strcpy(tmp.name,"/");
+	//fwrite(&tmp, sizeof(tmp), 1, file_system);
+
 	
-	strcpy(tmp.name, "/");
 	fwrite(&tmp, sizeof(tmp), 1, file_system);
 
 }
 
 
-void fseek_inode_to_root(FILE* file_system, int number_inode)
+void fseek_inode(FILE* file_system, int number_inode)
 {
-	fseek(file_system, 8, SEEK_SET);
+	fseek(file_system, number_inode, SEEK_SET);
 }
 
 
