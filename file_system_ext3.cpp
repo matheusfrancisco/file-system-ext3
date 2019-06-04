@@ -8,55 +8,56 @@ FILE* arquivo;
 int main(){
 
 	arquivo = fopen("PARTITION.bin", "rb+");
-
 	init(arquivo);
 	if(arquivo == NULL){
 		init(arquivo);
 	}
+
 }
 
 void init(FILE *file_system)
 {
 
 	file_system = fopen("PARTITION.bin", "wb+" );
+	unsigned char tamanho_blocos = TAMANHO_BLOCO_DADOS;
+	unsigned char numero_de_blocos = N_BLOCKS;
+	unsigned char numero_de_inodes = N_INODES;
 
-	//fwrite(&block_manager, sizeof(block_manager), 1, file_system);
 
+	fwrite(&tamanho_blocos, sizeof(unsigned char), 1,file_system);
+	fwrite(&numero_de_blocos, sizeof(unsigned char), 1,file_system);
+	fwrite(&numero_de_inodes, sizeof(unsigned char), 1,file_system);
+	fwrite(&block_map, sizeof(unsigned char), 1,file_system);
 
-	for(int inode_n= 0; inode_n< N_INODES; inode_n++){
-		inode tmp ;
+	for(int i =0; i<N_INODES;i++){
+		inode tmp;
 
-		tmp.status = 0;
-		tmp.dir  =0;
-		tmp.tam=0;
-		strcpy(tmp.name, "null");
-
+		tmp.is_used = 0;
+		tmp.is_dir  =0;
+		tmp.size=0;
+		//strcpy(tmp.name, "null");
+		for(int j=0; j<TAMANHO_BLOCO_DADOS; j++){
+			tmp.direct_blocks[i] = 0;
+		}
+		fwrite(&tmp, sizeof(tmp), 1, file_system);
 	}
-	for (int block;block<N_BLOCKS; block++)
-	{
-		fwrite(&block_manager, sizeof(block_manager), 1, file_system);
-	}
-
-	int inode_root = 0;
-	char * name_root = "/";
-
-	inode novo;
-	inode pai;
+	fseek_inode_to_root(file_system, 0);
+	inode tmp;
+	tmp.is_used = 0;
+	tmp.is_dir  =0;
+	tmp.size=0;
 	
-	strcpy(novo.name, name_root);
-	novo.dir = 1;
-	novo.status =1;
-	novo.tam = 0;
-	novo.data_block = findFreeBlock(file_system);
-	fseek_inode(file_system, inode_root);
-	fwrite(&novo, sizeof(novo), 1, file_system);
+	strcpy(tmp.name, "/");
+	fwrite(&tmp, sizeof(tmp), 1, file_system);
 
 }
 
-void fseek_inode(FILE* file_system, int number_inode)
+
+void fseek_inode_to_root(FILE* file_system, int number_inode)
 {
-	fseek(file_system, INODE_REGION + (number_inode*INODE_SIZE), SEEK_SET);
+	fseek(file_system, 8, SEEK_SET);
 }
+
 
 int findFreeBlock(FILE * file_system) {
 	unsigned char block_aux[N_BLOCKS];
@@ -74,29 +75,4 @@ int findFreeBlock(FILE * file_system) {
 	}
 	return -1;
 }
-/*
-void create_root(Inode root){
 
-     //Inode myInode;
-     root.flag = 1;
-     root.type = 1;
-     root.number = 0;
-     root.father_inode = 0; //INODE DO DIRETORIO PAI
-     strncpy(root.name, "/", sizeof(Inode::name));
-}
-
-
-void printInode(Inode i){
-    printf("Flag: %d\n", i.flag);
-    printf("Type: %d\n", i.type);
-    printf("Number: %d\n", i.number);
-    printf("Father: %d\n", i.father_inode);
-    printf("Name: %s\n", i.name);
-
-    for(int j = 0; j < 7; j++){
-        printf("Block[%d]: %d\n", j, i.blocks[j]);
-    }
-    cout<<endl;
-}
-
-*/
