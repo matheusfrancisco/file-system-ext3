@@ -12,6 +12,7 @@ int main(){
 	if(arquivo == NULL){
 		init_with_root(arquivo);
 	}
+	//FILE *file_s = fopen("PARTITION.bin", "wb+" );	
 
 }
 
@@ -41,38 +42,46 @@ void init_with_root(FILE *file_system)
 	cout<<sizeof(block_map)<<endl;
 
 	fwrite(&block_map, sizeof(block_map), 1,file_system);
-	int i;
+	for(int index =0; index<N_INODES; index++){
+		inode tmp;
+		tmp.is_used =0;
+		tmp.is_dir=0;
+		tmp.size=0;
+		for(int k=0; k<10;k++) tmp.name[k] = 0x0;
+		for(int j=0; j<3; j++){
+			memset(&tmp.direct_blocks[j],0x00,sizeof(tmp.direct_blocks[j]));
+			memset(&tmp.indirect_block[j],0x00,sizeof(tmp.direct_blocks[j])); 	
+			memset(&tmp.double_indirect_blocks[j],0x00,sizeof(tmp.double_indirect_blocks[j]));
 
-	inode tmp[N_INODES];
-	
-	for(i=0; i<N_INODES; i++)
-	{
-		tmp[i].is_used =0x00;
-		tmp[i].is_dir=0x00;
-		tmp[i].size=0x00;
-		for(int j=0; j<3; j++){
-			tmp[i].direct_blocks[j] = 0x00;
-		}
-		for(int j=0; j<3; j++){
-			tmp[i].indirect_block[j] = 0x00;
-		}
-		for(int j=0; j<3; j++){
-			tmp[i].double_indirect_blocks[j] = 0x00;
-		}
+		} 
 
+		/* tmp.double_indirect_blocks[0] = 0;
+		tmp.double_indirect_blocks[1] = 0;
+		tmp.double_indirect_blocks[2] = 0; */
+		fwrite(&tmp, sizeof(inode), 1 ,file_system);
+		//free(&tmp);
 	}
-	fwrite(&tmp, sizeof(struct inode_)*N_INODES, 1 ,file_system);
-	cout<<sizeof(tmp)<<endl;
-	//fclose(file_system);
 
-	//unsigned char index_root = 0;
+	//}
+	//fclose(file_system);
+	//fseek_inode(file_system,164);
+
+	for(int index =0 ; index< 128; index++){
+		vet_block[index] = 0;
+	}
+
+	fwrite(&vet_block, sizeof(vet_block), 1, file_system);
+
 	//fwrite(&index_root, sizeof(index_root), 1, file_system);
 	//create_root(file_system);
 	//int len = ftell(file_system);
 	//cout<<len<<endl;
-	
-	//fwrite(&vet_block, sizeof(vet_block), 1, file_system);
+	/* for(int index =0 ; index< 128; index++){
+		vet_block[index] = 0;
+	}
 
+	fwrite(&vet_block, sizeof(vet_block), 1, file_system);
+ */
 	/*
 	
 	create_root(file_system);
@@ -84,18 +93,37 @@ void init_with_root(FILE *file_system)
 	cout<<len<<endl;
 	
 	*/
+	create_root(arquivo);
+
+	//fclose(file_system);
 }
 
 void create_root(FILE * file_system){
-	fclose(file_system);
-	FILE * file = fopen("PARTITION.bin","r");
+//	file_system = fopen("PARTITION.bin", "wb+");
+
 	fseek_inode(file_system,8);
 	int len = ftell(file_system);
 	cout<<len<<endl;
 
-	inode tmp[N_INODES];
-	fread(&tmp, sizeof(struct inode_)*N_INODES , 1 ,file);
-	cout<<tmp[1].name<<endl;
+	inode tmp;
+	//fread(&tmp, sizeof(struct inode_), 1 ,file_system);
+	//fseek_inode(file_system,8);
+	tmp.is_dir =1;
+	tmp.is_used=1;
+	strcpy(tmp.name,"/");
+	for(int k=1; k<9;k++)tmp.name[k] =0x0;
+	tmp.size=0;
+	cout<<tmp.name<<endl;
+	for(int j=0; j<3; j++){
+			memset(&tmp.direct_blocks[j],0x00,sizeof(tmp.direct_blocks[j]));
+			memset(&tmp.indirect_block[j],0x00,sizeof(tmp.direct_blocks[j])); 	
+			memset(&tmp.double_indirect_blocks[j],0x00,sizeof(tmp.double_indirect_blocks[j]));
+
+	} 
+	fseek_inode(file_system,8);
+
+	fwrite(&tmp, sizeof(inode), 1, file_system);
+	
 	/* tmp.is_used = 1;
 	tmp.is_dir  =1;
 	tmp.size=0;
@@ -103,8 +131,6 @@ void create_root(FILE * file_system){
 	 */
 	//fwrite(&tmp, sizeof(tmp), 1, file_system);
 
-	
-	fwrite(&tmp, sizeof(inode), 1, file_system);
 
 }
 

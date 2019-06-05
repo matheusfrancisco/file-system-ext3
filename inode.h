@@ -36,12 +36,12 @@ struct inode_ {
     char size; //1
     unsigned char direct_blocks[3]; //3
     unsigned char indirect_block[3];
-    unsigned char double_indirect_blocks[3];
+    unsigned char double_indirect_blocks[3]; 
 };
-
+unsigned char index_root = 0;
 unsigned char block_map[4];
 typedef struct inode_ inode;
-char vet_block[N_BLOCKS*N_SIZE_BLOCKS] ={0};
+char vet_block[N_BLOCKS*N_SIZE_BLOCKS];
 
 void init_with_root(FILE * file_system);
 int findFreeBlock(FILE * file_system);
