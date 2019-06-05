@@ -30,24 +30,25 @@ using namespace std;
  
  
 struct inode_ {
-    unsigned char is_used;
-    unsigned char is_dir;
-    char name[10];
-    unsigned char size;
-    unsigned char direct_blocks[N_BLOCKS];
-    //unsigned char indirect_block[1];
-    //unsigned char double_direct_blocks[1];
+    unsigned char is_used; //1
+    unsigned char is_dir; //1
+    char name[10]; // 8 
+    char size; //1
+    unsigned char direct_blocks[3]; //3
+    unsigned char indirect_block[3];
+    unsigned char double_indirect_blocks[3];
 };
 
 unsigned char block_map[4];
 typedef struct inode_ inode;
-unsigned char vet_block[N_BLOCKS*N_SIZE_BLOCKS] ={0};
+char vet_block[N_BLOCKS*N_SIZE_BLOCKS] ={0};
 
 void init_with_root(FILE * file_system);
 int findFreeBlock(FILE * file_system);
 void fseek_inode(FILE* file_system, int number_inode);
 
 void create_root(FILE * file_system);
+void insert_vet_block(FILE * file_system);
 //void printInode(Inode i);
 //void create_root(Inode root);
 

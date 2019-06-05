@@ -28,60 +28,95 @@ void init_with_root(FILE *file_system)
 	fwrite(&numero_de_blocos, sizeof(numero_de_blocos), 1,file_system);
 	fwrite(&numero_de_inodes, sizeof(numero_de_inodes), 1,file_system);
 
-	block_map[0] = 1;
+
+	cout<<sizeof(numero_size_block)<<endl;
+	cout<<sizeof(numero_de_blocos)<<endl;
+	cout<<sizeof(numero_de_inodes)<<endl;
+
+	block_map[0] = 1;// primeiro é o root
 	block_map[1] = 0;
 	block_map[2] = 0;
 	block_map[3] = 0;
+	
+	cout<<sizeof(block_map)<<endl;
 
 	fwrite(&block_map, sizeof(block_map), 1,file_system);
+	int i;
+
+	inode tmp[N_INODES];
 	
-
-	for(int i =0; i<N_INODES;i++){
-		inode tmp;
-
-		tmp.is_used = 0;
-		tmp.is_dir  =0;
-		tmp.size=0;
-		//if(i == 0 ){
-		//	strcpy(tmp.name, "/");
-		//}
-		for(int j=0; j<N_BLOCKS; j++){
-			tmp.direct_blocks[j] = 0;
+	for(i=0; i<N_INODES; i++)
+	{
+		tmp[i].is_used =0x00;
+		tmp[i].is_dir=0x00;
+		tmp[i].size=0x00;
+		for(int j=0; j<3; j++){
+			tmp[i].direct_blocks[j] = 0x00;
 		}
-		fwrite(&tmp, sizeof(tmp), 1, file_system);
+		for(int j=0; j<3; j++){
+			tmp[i].indirect_block[j] = 0x00;
+		}
+		for(int j=0; j<3; j++){
+			tmp[i].double_indirect_blocks[j] = 0x00;
+		}
+
 	}
-	unsigned char index_root = 0;
+	fwrite(&tmp, sizeof(struct inode_)*N_INODES, 1 ,file_system);
+	cout<<sizeof(tmp)<<endl;
+	//fclose(file_system);
+
+	//unsigned char index_root = 0;
+	//fwrite(&index_root, sizeof(index_root), 1, file_system);
+	//create_root(file_system);
+	//int len = ftell(file_system);
+	//cout<<len<<endl;
+	
+	//fwrite(&vet_block, sizeof(vet_block), 1, file_system);
+
+	/*
+	
 	create_root(file_system);
-
-	fseek_inode(file_system, 13);
-
-	fwrite(&index_root, sizeof(index_root), 1, file_system);
-
-		
-
-		
 	fseek_inode(file_system, 14);
-
-	fwrite(&vet_block, sizeof(vet_block), 1, file_system);
-
+	//fseek_inode(file_system, 13);
+	int len = ftell(file_system);
+	cout<<len<<endl;
+	len = ftell(file_system);
+	cout<<len<<endl;
+	
+	*/
 }
 
 void create_root(FILE * file_system){
-	fseek_inode(file_system,7);
+	fclose(file_system);
+	FILE * file = fopen("PARTITION.bin","r");
+	fseek_inode(file_system,8);
+	int len = ftell(file_system);
+	cout<<len<<endl;
 
-	inode tmp;
-
-	tmp.is_used = 1;
+	inode tmp[N_INODES];
+	fread(&tmp, sizeof(struct inode_)*N_INODES , 1 ,file);
+	cout<<tmp[1].name<<endl;
+	/* tmp.is_used = 1;
 	tmp.is_dir  =1;
 	tmp.size=0;
 	strcpy(tmp.name,"/");
+	 */
 	//fwrite(&tmp, sizeof(tmp), 1, file_system);
 
 	
-	fwrite(&tmp, sizeof(tmp), 1, file_system);
+	fwrite(&tmp, sizeof(inode), 1, file_system);
 
 }
 
+void insert_vet_block(FILE* file_system){
+	//fseek_inode(file_system, 16);
+	
+
+	fwrite(&vet_block, sizeof(vet_block), 1, file_system);
+	
+	cout<<sizeof(vet_block)<<endl;
+
+}
 
 void fseek_inode(FILE* file_system, int number_inode)
 {
