@@ -13,8 +13,11 @@ int main(){
 		init_with_root(arquivo);
 	}
 	//FILE *file_s = fopen("PARTITION.bin", "wb+" );	
+	create_root(arquivo);
+	cretae_file(arquivo);
 
 }
+
 
 void init_with_root(FILE *file_system)
 {
@@ -93,9 +96,28 @@ void init_with_root(FILE *file_system)
 	cout<<len<<endl;
 	
 	*/
-	create_root(arquivo);
+	//create_root(arquivo);
 
 	//fclose(file_system);
+}
+
+void create_file(FILE* file_system){
+	//file_system = fopen("PARTITION.bin", "wb+" );
+	int position = find_inode_livre(FILE *file_system);
+	cout<<position<<endl;
+
+}
+
+int find_inode_livre(FILE *file_system){
+	fseek(file_system, 8);
+	inode tmp[N_INODES];
+	for(int index=0;index<N_INODES; index++)
+	{
+		fread(&tmp[index], sizeof(struct inode_), 1, file_system);
+		cout<<index<<endl;
+		cout<<tmp[index].is_used<<cout;
+		if(tmp[index].is_used == 0x0) return index;
+	}
 }
 
 void create_root(FILE * file_system){
