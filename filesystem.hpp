@@ -46,6 +46,7 @@ class FileSystem
         FILE *file_system_name;
         //inode _inode ;
 
+        //infos
     
     public:
         void init();
@@ -56,7 +57,11 @@ class FileSystem
         void insert_index_root(FILE *partition);
 
         /*methods*/
+        void change_bit_map(FILE* partition, int number_block);
         void create_root(string root_name_, FILE* partition);
+        int find_block_free(FILE* partition);
+
+        
         //auxiliar functions
         static vector<string> split(string str, char delimiter);
         

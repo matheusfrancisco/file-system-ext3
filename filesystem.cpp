@@ -101,13 +101,54 @@ void FileSystem::create_root(string root_name_, FILE* partition){
 			memset(&_root.double_indirect_blocks[j],0x00,sizeof(_root.double_indirect_blocks[j]));
     }
     fwrite(&_root, sizeof(_root), 1, partition);
-
+    int number_block_free_ = find_block_free(file_system_name);
+    cout<<number_block_free_<<endl;
+    change_bit_map(file_system_name, number_block_free_);
 }
 
 void FileSystem::insert_index_root(FILE * partition){
     fseek(partition, finish_inode_map, SEEK_SET);
     fwrite(&root_inode, sizeof(unsigned char), 1, partition);
     root_dir_index_in_file= ftell(partition);
+}
+
+void FileSystem::change_bit_map(FILE* partition, int number_block_free){
+
+    int position_in_map = (int)ceil(number_block_free/8.0);
+    unsigned char bit_map_aux[(int)ceil(number_blocks/8.0)];
+    fseek(partition, bit_map_start, SEEK_SET);
+    fread(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
+    int current_value_in_map =  bit_map_aux[(number_block_free/8)];
+    //cout<<current_value_in_map<<endl;
+    int new_value = (1<< (current_value_in_map%8));
+    //cout<<new_value<<endl;
+    //bit_map_aux[number_block_free/8] |= (1<<(number_block_free%8));
+    //int new_value_bit  = (current_value<<1);
+   //cout<<position_in_map<<endl;
+    bit_map_aux[position_in_map] = new_value;
+    fseek(partition, bit_map_start, SEEK_SET);
+    //int t = ftell(partition);
+    //cout<<t<<"aqui"<<endl;
+    //cout<<sizeof(bit_map_aux)<<endl;
+    fwrite(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
+}
+
+int FileSystem::find_block_free(FILE *partition)
+{
+	int number_block_free;
+
+	unsigned char block_aux[(int)ceil(number_blocks/8.0)];
+	
+	int i;
+	fseek(partition, bit_map_start, SEEK_SET);
+	fread(&block_aux, sizeof(block_aux), 1, partition);
+ 	int flag;
+	for(int i = 0; i < number_blocks; i++) {
+		 flag = (block_aux[i/8] & (1 << (i%8)));
+		 if(flag == 0)
+		 	return i;
+	}
+	return -1;
 }
 
 void FileSystem::init(){
@@ -155,6 +196,8 @@ void FileSystem::init(){
     cin>>root_name;
     cout<<root_name<<endl;
     create_root(root_name, file_system_name);
+    
+    
 
     
 }
