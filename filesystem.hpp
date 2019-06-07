@@ -57,11 +57,14 @@ class FileSystem
         void insert_index_root(FILE *partition);
 
         /*methods*/
-        void change_bit_map(FILE* partition, int number_block);
+        void change_bit_map(FILE* partition, int number_block_free);
         void create_root(string root_name_, FILE* partition);
         int find_block_free(FILE* partition);
-
-        
+        int find_inode_free(FILE *partition);
+        void add_file_root(string file_name,string conteudo, FILE* partition);
+        void insert_information_in_block(FILE* partition, int position, string info, int number_blocks_used);
+        void change_bit_map_file(FILE* partition, int number_block_free, int number_block_used);
+        void change_size_root(FILE * partition);
         //auxiliar functions
         static vector<string> split(string str, char delimiter);
         

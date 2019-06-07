@@ -32,10 +32,13 @@ void FileSystem::create_bit_map(FILE *partition){
         //cout<<bit_map[i]<<endl;
     }
     
-    cout<<sizeof(bit_map)<<endl;
+    //cout<<sizeof(bit_map)<<endl;
     fseek(partition, 3, SEEK_SET);
+    
+    //start bit map
     bit_map_start = 3;
     fwrite(&bit_map, sizeof(bit_map), 1,partition);
+    //end bit map
     bit_map_end = ftell(partition);    
 }
 
@@ -73,9 +76,9 @@ void FileSystem::create_vector_blocks(FILE* partition){
         //cout<<bit_map[i]<<endl;
     }
     fseek(partition, root_dir_index_in_file,SEEK_SET);
-
+    //vector_block_start_in_map = ftell(partition);
     fwrite(&vector_block, sizeof(vector_block), 1,partition);
-
+    //vector_block_end_in_map = ftell(partition);
 }
 
 void FileSystem::create_root(string root_name_, FILE* partition){
@@ -151,12 +154,122 @@ int FileSystem::find_block_free(FILE *partition)
 	return -1;
 }
 
+int FileSystem::find_inode_free(FILE *partition){
+    fseek(partition, start_inode_map, SEEK_SET);
+    inode vet_inode[number_inodes];
+    fread(&vet_inode, sizeof(inode)*number_inodes, 1, partition);
+    for(int index=0;index<number_inodes; index++){
+        if(vet_inode[index].is_used == 0){
+            return index;
+        }
+    }
+    return -1;
+}
+void FileSystem::insert_information_in_block(FILE* partition, int position, string info, int number_block_used){
+    int real_possition_in_file = position + root_dir_index_in_file;
+    cout<<"Real postition in vector block"<<"|"<<real_possition_in_file<<endl;
+
+    fseek(partition, real_possition_in_file, SEEK_SET);
+    
+    cout<<"number block used"<<"|"<<number_block_used<<endl;
+
+    unsigned char block[sizeof_blocks*number_block_used];
+    fread(&block,sizeof(sizeof_blocks) * sizeof_blocks * number_block_used,1, partition );
+    for(int i=0; i<(sizeof_blocks*number_block_used); i++)
+    {
+        block[i] = info[i];
+    }
+
+    fwrite(&block, sizeof(block), 1, partition);
+
+}
+
+void FileSystem::change_bit_map_file(FILE* partition, int number_block_free, int number_block_used)
+{
+    int position_in_map = (int)ceil(number_block_free/8.0);
+    unsigned char bit_map_aux[(int)ceil(number_blocks/8.0)];
+    
+    fseek(partition, bit_map_start, SEEK_SET);
+    fread(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
+    
+    int current_value_in_map =  bit_map_aux[(number_block_free/8)];
+    int new_value = (number_block_used<< (current_value_in_map%8));
+        
+    
+    bit_map_aux[position_in_map] = new_value;
+    
+    fseek(partition, bit_map_start, SEEK_SET);
+    fwrite(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
+}
+
+void FileSystem::change_size_root(FILE * partition)
+{
+    fseek(partition, start_inode_map, SEEK_SET);
+    unsigned char old_size;
+    
+    inode root_;
+
+    fread(&root_, sizeof(root_),1,  partition);
+    old_size = root_.size;
+    old_size +=1;
+    int position = start_inode_map + 12;
+    fseek(partition, position, SEEK_SET);
+    fwrite(&old_size, sizeof(unsigned char), 1,partition);
+
+}
+
+void FileSystem::add_file_root(string file_name,string conteudo, FILE* partition){
+
+    //find inode free
+    int inode_free = find_inode_free(partition);
+    uint8_t position_in_vet_inode = inode_free* sizeof(inode);
+    cout<<inode_free<<"|index inode free|"<<endl;
+    
+    fseek(partition, position_in_vet_inode, SEEK_SET);
+    inode _file;
+
+    _file.is_dir=0;
+    _file.is_used=1;
+    _file.size=conteudo.length();
+    for(int n=0;n<10;n++)
+        _file.name[n] = 0;
+    for(int s=0; s<file_name.length(); s++){
+        _file.name[s] = file_name[s];
+    }
+    for(int j= 0; j<3; j++){
+            memset(&_file.direct_blocks[j],0x00,sizeof(_file.direct_blocks[j]));
+			memset(&_file.indirect_block[j],0x00,sizeof(_file.direct_blocks[j])); 	
+			memset(&_file.double_indirect_blocks[j],0x00,sizeof(_file.double_indirect_blocks[j]));
+    }
+    fwrite(&_file, sizeof(_file), 1, partition);
+    
+    int tamanho_string = conteudo.length();
+    int number_blocks_to_use = (int)ceil(tamanho_string/(float)sizeof_blocks);
+
+    int number_block_free_ = find_block_free(partition);
+    //cout<<number_block_free_<<endl;
+    int position_block_in_map = number_block_free_ * sizeof_blocks;
+    
+    insert_information_in_block(partition, position_block_in_map, conteudo , number_blocks_to_use);
+
+    change_bit_map_file(partition, number_block_free_, number_blocks_to_use);
+    
+    change_size_root(partition);
+
+
+    //create inode
+    //find block free
+    //insert data in bitmap
+    //change bit_map
+    //add position block  in inode
+    
+}
+
 void FileSystem::init(){
     string sentence; 
     const char delimiter =' ';
  
     string command;
-    string name_file_bin;
     
     // get string init fs.bin 4 32 7 
     getline(cin,sentence);
@@ -168,8 +281,12 @@ void FileSystem::init(){
     
 
     command = sep[0];
-    name_file_bin = sep[1];
-    
+    char *name_file_bin;
+    name_file_bin  = (char*)malloc(sizeof(char)*sep[1].length());
+
+    for(int i=0;i<sep[1].length();i++ )
+        name_file_bin[i] = sep[1][i] ;
+
     sizeof_blocks= atoi(sep[2].c_str());
     number_blocks = atoi(sep[3].c_str());
     number_inodes = atoi(sep[4].c_str()); 
@@ -180,7 +297,7 @@ void FileSystem::init(){
         create_file(file_system_name);
     }
     //open file
-    file_system_name = fopen("fs.bin", "wb+");
+    file_system_name = fopen(name_file_bin, "wb+");
 	fwrite(&sizeof_blocks, sizeof(unsigned char), 1,file_system_name);
 	fwrite(&number_blocks, sizeof(unsigned char), 1,file_system_name);
 	fwrite(&number_inodes, sizeof(unsigned char), 1,file_system_name);
@@ -196,8 +313,11 @@ void FileSystem::init(){
     cin>>root_name;
     cout<<root_name<<endl;
     create_root(root_name, file_system_name);
-    
-    
+
+    string s= "/test.txt";
+    string c= "123456";
+
+    add_file_root(s, c, file_system_name);
 
     
 }
