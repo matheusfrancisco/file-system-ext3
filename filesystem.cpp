@@ -192,10 +192,17 @@ void FileSystem::change_bit_map_file(FILE* partition, int number_block_free, int
     fseek(partition, bit_map_start, SEEK_SET);
     fread(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
     
-    int current_value_in_map =  bit_map_aux[(number_block_free/8)];
-    int new_value = (number_block_used<< (current_value_in_map%8));
-        
-    
+    int new_value;
+    int current_value_in_map;
+    while(number_block_free< number_block_used){
+        current_value_in_map =  bit_map_aux[(number_block_free/8)];
+        new_value = (1<< (current_value_in_map%8));
+
+        number_block_free +=1;
+        bit_map_aux[(number_block_free/8)] = new_value;
+    }
+
+    cout<<"Olha ele aqui"<<new_value<<endl;
     bit_map_aux[position_in_map] = new_value;
     
     fseek(partition, bit_map_start, SEEK_SET);
@@ -255,6 +262,7 @@ void FileSystem::add_file_root(string file_name,string conteudo, FILE* partition
     change_bit_map_file(partition, number_block_free_, number_blocks_to_use);
     
     change_size_root(partition);
+
 
 
     //create inode
