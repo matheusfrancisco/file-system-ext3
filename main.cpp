@@ -4,6 +4,8 @@
 int main(){
 
     FileSystem filesystem_;
-    filesystem_.init();
+    filesystem_.command_inputs();
+
+    //filesystem_.init();
     //filesystem_.create_root();
 }
