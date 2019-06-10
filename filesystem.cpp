@@ -23,10 +23,10 @@ void FileSystem::create_file(string name_file_system){
     for(int i=0;i<name_file_system.length();i++ ){
         name_file_bin[i] = name_file_system[i] ;
     }
-    file_system_name = fopen(name_file_bin, "rb+");
+    file_system_name = fopen(name_file_bin, "wb+");
     if(file_system_name == NULL)
     {
-        file_system_name = fopen(name_file_bin, "rb+");
+        file_system_name = fopen(name_file_bin, "wb+");
 
     }
 
@@ -205,22 +205,21 @@ void FileSystem::insert_information_in_block(FILE* partition, int position, stri
 
 void FileSystem::change_bit_map_file(FILE* partition, int number_block_free, int number_block_used)
 {
-    
+    cout<<"Number block free: "<<number_block_free<<endl;
     int position_in_map = (int)floor(number_block_free/8.0);
     unsigned char bit_map_aux[(int)ceil(number_blocks/8.0)];
-    cout<<position_in_map<<"AQUII"<<endl;
+    cout<<"Position in bitMap: "<<position_in_map<<endl;
 
     fseek(partition, bit_map_start, SEEK_SET);
     fread(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
     
     unsigned char new_value;
     unsigned char  current_value_in_map = bit_map_aux[position_in_map];
-    int old = current_value_in_map;
-    new_value = current_value_in_map | (1<<current_value_in_map);
-    int test = new_value;
+    new_value = current_value_in_map | (current_value_in_map<<1);
 
-   
-    cout<<"Olha ele aqui"<<test<<endl;
+    int value_novo = new_value;
+
+    cout<<"New value in bitMap: "<<value_novo<<endl;
     bit_map_aux[position_in_map] = new_value;
     
     fseek(partition, bit_map_start, SEEK_SET);
@@ -468,10 +467,10 @@ void FileSystem::command_inputs(){
 		    name_file_bin[strlen(name_file_bin)-1] = 0x00;
         //cout<<name_file_bin<<endl;
             cout<<"oi"<<endl;
-        create_file(file_system_name_create);
-        file_system_name = fopen(name_file_bin, "r+w");
+        //create_file(file_system_name_create);
+        file_system_name = fopen(name_file_bin, "rb+");
         if(file_system_name == NULL){
-            file_system_name = fopen(name_file_bin, "r+w");
+            file_system_name = fopen(name_file_bin, "rb+");
         }
 
         cout<<"oi2"<<endl;
