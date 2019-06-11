@@ -16,7 +16,7 @@ vector<string> FileSystem::split(string str, char delimiter) {
 }
 
 void FileSystem::create_file(string name_file_system){
-    cout<<"File::"<<name_file_system<<"create"<<endl;
+    //cout<<"File::"<<name_file_system<<"create"<<endl;
     char *name_file_bin;
     name_file_bin  = (char*)malloc(sizeof(char)*name_file_system.length());
         
@@ -185,17 +185,17 @@ int FileSystem::find_inode_free(FILE *partition){
     return -1;
 }
 void FileSystem::insert_information_in_block(FILE* partition, int position, string info, int number_block_used){
-    cout<<"Position to start map inode : "<<start_inode_map<<endl;
-    cout<<"Position to end map inode : "<<finish_inode_map<<endl;
-    cout<<"Position to root dir : "<<root_dir_index_in_file<<endl;
-    cout<<"Position to vet inode start : "<<vector_block_start_in_map<<endl;
+    //cout<<"Position to start map inode : "<<start_inode_map<<endl;
+    //cout<<"Position to end map inode : "<<finish_inode_map<<endl;
+    //cout<<"Position to root dir : "<<root_dir_index_in_file<<endl;
+    //cout<<"Position to vet inode start : "<<vector_block_start_in_map<<endl;
 
-    cout<<"Position to insert informations in block: "<<position<<endl;
+    //cout<<"Position to insert informations in block: "<<position<<endl;
     
     int real_position = position + vector_block_start_in_map;
     fseek(partition, real_position, SEEK_SET);
     
-    cout<<"number block used : "<<number_block_used<<endl;
+    //cout<<"number block used : "<<number_block_used<<endl;
 
     unsigned char block[sizeof_blocks*number_block_used];
 
@@ -296,7 +296,7 @@ void FileSystem::add_file_root(string file_name,string conteudo, FILE* partition
     int inode_free = find_inode_free(partition);
     
     uint8_t position_in_vet_inode = start_inode_map + inode_free* sizeof(inode);
-    cout<<inode_free<<"|index inode free|"<<endl;
+    //cout<<inode_free<<"|index inode free|"<<endl;
 
     int tamanho_string = conteudo.length();
     int number_blocks_to_use = (int)ceil(tamanho_string/(float)sizeof_blocks);
@@ -326,8 +326,8 @@ void FileSystem::add_file_root(string file_name,string conteudo, FILE* partition
    
     int position_block_in_map =  number_frist_free_block * sizeof_blocks;
     
-    cout<<"Frist block free: "<<number_frist_free_block<<endl;
-    cout<<"Number block used: "<<number_blocks_to_use<<endl;
+    //cout<<"Frist block free: "<<number_frist_free_block<<endl;
+    //cout<<"Number block used: "<<number_blocks_to_use<<endl;
     //change_root_direct_block(partition, inode_free);
     change_size_root(partition);
 
@@ -438,7 +438,7 @@ unsigned char  FileSystem::get_address_free_block_in_root(FILE * partition){
     fread(&root_block, sizeof(root_block), 1, partition);
     for(int address=0;address< sizeof_blocks;address++){
         if(root_block[address] == 0x00){
-            cout<<address<<"AQUIII"<<endl;
+            //cout<<address<<"AQUIII"<<endl;
             return address;
             //break;
         }
@@ -457,7 +457,7 @@ void FileSystem::change_root_direct_block(FILE* partition){
     int test = address;
     for(int i=0;i<3;i++){
         if(tmp.direct_blocks[i] == 0x0){
-            cout<<"Foi add no block direto "<<test<<endl;
+            //cout<<"Foi add no block direto "<<test<<endl;
             tmp.direct_blocks[i] =address;
             break;
         }
@@ -477,14 +477,14 @@ void FileSystem::addFile(FILE* partition, string file_name, string info_file){
 void FileSystem::add_number_inode_dir_in_vet_block(FILE * partition,  int inode_index){
     
     unsigned char root_block[sizeof_blocks];
-    cout<<"inicio vetor de block "<<vector_block_start_in_map<<endl;
+    //cout<<"inicio vetor de block "<<vector_block_start_in_map<<endl;
    
         fseek(partition,vector_block_start_in_map, SEEK_SET);
         fread(&root_block, sizeof(root_block), 1, partition);
         int last_index;
         for(int i=0;i<sizeof_blocks; i++){
             if(root_block[i] == 0x00){
-                cout<<"Numero do inode add no dir "<<inode_index<<endl;
+                //cout<<"Numero do inode add no dir "<<inode_index<<endl;
                 last_index = i;
                 root_block[i] = inode_index;
                 break;
@@ -558,7 +558,7 @@ void FileSystem::addDir(FILE* partition, string name_dir){
     change_size_root(partition);
     //change_root_direct_block(partition);
     
-    cout<<"This is the next block free in vector blocks"<<next_block_free<<endl;
+    //cout<<"This is the next block free in vector blocks"<<next_block_free<<endl;
     change_bit_map_adddir(partition, next_block_free, 1);
 
 }
@@ -616,7 +616,7 @@ void FileSystem::command_inputs(){
             exit(0);
         }else if(sep[0].compare("addDir") == 0){
             addDir(file_system_name, name_dir_create);
-        }else if(sep[0].compare("addFile") == 0){
+        }else if(sep[0].compare("add") == 0){
             addFile(file_system_name, name_file_to_add, info_to_insert_file);
         }else if(sep[0].compare("exit")){
             return ;
