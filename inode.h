@@ -14,12 +14,6 @@
 #include <sys/stat.h>
 #include <iostream>
 
-#define N_BLOCKS 32 // 32 blocos
-#define N_SIZE_BLOCKS 4 // 4 bytes cada bloco
-#define N_INODES 7 // 7 inodes
-//#define N_BLOCKS 10
-
-
 
 using namespace std;
  
@@ -40,17 +34,6 @@ unsigned char block_map[(int)ceil(N_BLOCKS/8.0)]; //mapa de bits
 typedef struct inode_ inode;
 char vet_block[N_BLOCKS*N_SIZE_BLOCKS]; 
 
-void init_with_root(FILE * file_system);
-int findFreeBlock(FILE * file_system);
-void fseek_inode(FILE* file_system, int number_inode);
-
-void create_root(FILE * file_system);
-void insert_vet_block(FILE * file_system);
-//void printInode(Inode i);
-//void create_root(Inode root);
-int find_inode_livre(FILE *file_system);
-void create_file(FILE* file_system);
-int find_block_free(FILE *file_system);
 
 #endif //INODE_H_
 
