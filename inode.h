@@ -28,11 +28,8 @@ struct inode_ {
     unsigned char double_indirect_blocks[3]; 
 }; // 22bytes
 
-unsigned char index_root = 0; //index root
-unsigned char block_map[(int)ceil(N_BLOCKS/8.0)]; //mapa de bits
 
 typedef struct inode_ inode;
-char vet_block[N_BLOCKS*N_SIZE_BLOCKS]; 
 
 
 #endif //INODE_H_
