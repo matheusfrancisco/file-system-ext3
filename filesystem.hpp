@@ -16,6 +16,8 @@
 #include <vector>
 #include <cstring>
 #include <bitset>
+#include <openssl/sha.h>
+#include <openssl/bio.h>
 
 using namespace std;
 
@@ -88,6 +90,7 @@ class FileSystem
         void get_file_system_informations(FILE* partition);
 
         void convert_string_to_char();
+        void printSha256(string path);
 
         static vector<string> split(string str, char delimiter);
         
