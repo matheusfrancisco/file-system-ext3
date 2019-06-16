@@ -15,21 +15,42 @@ vector<string> FileSystem::split(string str, char delimiter) {
   return internal;
 }
 
-void FileSystem::printSha256(string path){
+vector<string> FileSystem::split2(string stringToBeSplitted, string delimeter)
+{
+	vector<string> splittedString;
+	int startIndex = 0;
+	int  endIndex = 0;
+	while( (endIndex = stringToBeSplitted.find(delimeter, startIndex)) < stringToBeSplitted.size() )
+	{
  
-    char * path_;
-    path_  = (char*)malloc(sizeof(char)*path.length());
+		string val = stringToBeSplitted.substr(startIndex, endIndex - startIndex);
+		splittedString.push_back(val);
+		startIndex = endIndex + delimeter.size();
+ 
+	}
+	if(startIndex < stringToBeSplitted.size())
+	{
+		string val = stringToBeSplitted.substr(startIndex);
+		splittedString.push_back(val);
+	}
+	return splittedString;
+ 
+}
+void FileSystem::printSha256(){
+ 
+    /* char * path_;
+    path_  = (char*)malloc(sizeof(char)*file_system_name_create.length());
         
-    for(int i=0;i<path.length();i++ ){
-        path_[i] = path[i] ;
+    for(int i=0;i<file_system_name_create.length();i++ ){
+        path_[i] = file_system_name_create[i] ;
     }
-    
+     */
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
     
     unsigned int fileSize = 0;
-    BIO* fileBio = BIO_new_file(path_, "r");
+    BIO* fileBio = BIO_new_file(file_system_name_create.c_str(), "r");
     char data;
     
     while(BIO_read(fileBio, &data, 1) > 0){
@@ -49,7 +70,7 @@ void FileSystem::printSha256(string path){
 
 void FileSystem::create_file(string name_file_system){
     //cout<<"File::"<<name_file_system<<"create"<<endl;
-    char *name_file_bin;
+   /*  char *name_file_bin;
     name_file_bin  = (char*)malloc(sizeof(char)*name_file_system.length());
         
     for(int i=0;i<name_file_system.length();i++ ){
@@ -61,7 +82,8 @@ void FileSystem::create_file(string name_file_system){
         file_system_name = fopen(name_file_bin, "wb+");
 
     }
-
+    fclose(file_system_name);
+ */
 }
 
 void FileSystem::create_bit_map(FILE *partition){
@@ -152,9 +174,9 @@ void FileSystem::create_root(string root_name_, FILE* partition){
 			memset(&_root.double_indirect_blocks[j],0x00,sizeof(_root.double_indirect_blocks[j]));
     }
     fwrite(&_root, sizeof(_root), 1, partition);
-    int number_block_free_ = find_block_free(file_system_name);
+    int number_block_free_ = find_block_free(partition);
     //cout<<number_block_free_<<endl;
-    change_bit_map(file_system_name, number_block_free_);
+    change_bit_map(partition, number_block_free_);
 }
 
 void FileSystem::insert_index_root(FILE * partition){
@@ -409,6 +431,7 @@ void FileSystem::init(FILE *partition, int n_blocks, int n_inodes, int size_bloc
     //cout<<"Number inode in system : "<<"|| "<<n_inodes<<" ||"<<endl;
 
     //file_system_name_create = name_file_system;
+
     sizeof_blocks= size_blocks;
     number_blocks = n_blocks;
     number_inodes = n_inodes; 
@@ -426,7 +449,7 @@ void FileSystem::init(FILE *partition, int n_blocks, int n_inodes, int size_bloc
     create_root(rootName, partition);
    
 
-    
+    fclose(partition);
 }
 void FileSystem::get_file_system_informations(FILE *partition){
     unsigned char informations_file_system[3];
@@ -504,6 +527,8 @@ void FileSystem::change_root_direct_block(FILE* partition){
 void FileSystem::addFile(FILE* partition, string file_name, string info_file){
     get_file_system_informations(partition);
     add_file_root(file_name, info_file,  partition);
+    fclose(partition);
+
 }
 
 void FileSystem::add_number_inode_dir_in_vet_block(FILE * partition,  int inode_index){
@@ -593,16 +618,55 @@ void FileSystem::addDir(FILE* partition, string name_dir){
     
     //cout<<"This is the next block free in vector blocks"<<next_block_free<<endl;
     change_bit_map_adddir(partition, next_block_free, 1);
-
+    fclose(partition);
 }
 
+void printSha256(string name_system){
+ 
+    /* char * path_;
+    path_  = (char*)malloc(sizeof(char)*file_system_name_create.length());
+        
+    for(int i=0;i<file_system_name_create.length();i++ ){
+        path_[i] = file_system_name_create[i] ;
+    }
+     */
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    
+    unsigned int fileSize = 0;
+    BIO* fileBio = BIO_new_file(name_system.c_str(), "r");
+    char data;
+    
+    while(BIO_read(fileBio, &data, 1) > 0){
+        fileSize++;
+        SHA256_Update(&sha256, &data, 1);
+    }
+    
+    SHA256_Final(hash, &sha256);
+    
+    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
+        printf("%.2x", hash[i]);
+    }
+    
+    BIO_free(fileBio);
+}
 void FileSystem::command_inputs(){
 
    
-        string sentence; 
+        string sentence;
+        //char sentence[25];
         const char delimiter =' ';
         getline(cin,sentence);
-        vector<string> sep =   split(sentence, delimiter);
+ 
+	// Spliting the string by ''
+        vector<string> sep = split(sentence, ' ');
+        for(int i = 0; i < sep.size() ; i++)
+            cout<<sep[i]<<endl;
+
+        
+      /*   vector<string> sep =   split2(sentence, delimiter);*/
         
         int len_vector = sep.size();
         if(len_vector == 3){
@@ -623,19 +687,39 @@ void FileSystem::command_inputs(){
             exit(0);
         }
         file_system_name_create = sep[1];
-
+        name_file_global = sep[1];
         
 
         //create file again 
         //create_file(file_system_name_create);
 
         if(sep[0].compare("init") == 0){
-            create_file(file_system_name_create);
+            char name_file_bin[100];
+            cout<<file_system_name_create.length()<<endl;
+            //name_file_bin  = (char*)malloc(sizeof(char)*file_system_name_create.length());
+                
+            for(int i=0;i<file_system_name_create.length();i++ ){
+                name_file_bin[i] = file_system_name_create[i] ;
+            }
+
+            //name_file_bin[strlen(name_file_bin)+1] = '\0';
+            
+            cout<<name_file_bin<<endl;
+            cout<<"Aqui"<<endl;
+            
+            FILE *file_system_name = fopen(file_system_name_create.c_str(), "wb+");
+            if(file_system_name == NULL)
+            {
+                file_system_name = fopen(file_system_name_create.c_str(), "wb+");
+
+            }
             init(file_system_name,atoi(sep[3].c_str()), atoi(sep[4].c_str()), atoi(sep[2].c_str()));
-            printSha256(file_system_name_create);
-            exit(0);
+            //fclose(file_system_name);
+            //printSha256(file_system_name_create);
+            //return;
+            //exit(0);
         }else if(sep[0].compare("addDir") == 0){
-            int len = 0;
+            /* int len = 0;
             char name_file_bin[file_system_name_create.length()];
 
             for(int i=0;i<file_system_name_create.length();i++ ){
@@ -643,19 +727,21 @@ void FileSystem::command_inputs(){
                 len++;
             } 
             if (name_file_bin[strlen(name_file_bin)-1] == 10)
-                name_file_bin[strlen(name_file_bin)-1] = 0x00;
+                name_file_bin[strlen(name_file_bin)-1] = 0x00; */
             //cout<<name_file_bin<<endl;
             //
-            file_system_name = fopen(name_file_bin, "rb+");
+            FILE *file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             if(file_system_name == NULL){
-                file_system_name = fopen(name_file_bin, "rb+");
+                file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             }
 
             addDir(file_system_name, name_dir_create);
-            printSha256(name_file_bin);
-            exit(0);
+            //fclose(file_system_name);
+
+            //printSha256(name_file_bin);
+            //exit(0);
         }else if(sep[0].compare("add") == 0){
-            int len = 0;
+            /* int len = 0;
             char name_file_bin[file_system_name_create.length()];
 
             for(int i=0;i<file_system_name_create.length();i++ ){
@@ -666,18 +752,20 @@ void FileSystem::command_inputs(){
                 name_file_bin[strlen(name_file_bin)-1] = 0x00;
             //cout<<name_file_bin<<endl;
             //
-            file_system_name = fopen(name_file_bin, "rb+");
+            name_file_bin[strlen(name_file_bin)] = '\0'; */
+            FILE* file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             if(file_system_name == NULL){
-                file_system_name = fopen(name_file_bin, "rb+");
+                file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             }
             addFile(file_system_name, name_file_to_add, info_to_insert_file);
-            printSha256(name_file_bin);
-            exit(0);
+            //fclose(file_system_name);
+            //printSha256(name_file_bin);
+            //exit(0);
         }else if(sep[0].compare("exit")){
             exit(0);
         }else{
             cout<<"Command not found"<<endl;
         } 
-
-   
+    //printSha256(file_system_name_create);
+   return;  
 }
