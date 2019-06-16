@@ -53,7 +53,6 @@ class FileSystem
         int vector_block_size;
         int vector_block_start_in_map;
         int vector_block_end_in_map;
-        FILE *file_system_name;
         //inode _inode ;
 
         //infos
@@ -88,12 +87,11 @@ class FileSystem
         //auxiliar functions
         void change_inode_direct(FILE* partition,int number_inode,  int frist_address, int numbers_used);
         void get_file_system_informations(FILE* partition);
-
+        static vector<string> split2(string stringToBeSplitted, string delimeter);
         void convert_string_to_char();
-        void printSha256(string path);
-
+        //void printSha256(string path);
+        void printSha256();
         static vector<string> split(string str, char delimiter);
-        
         
 };
 #endif

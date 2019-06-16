@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <string.h>
+#include <string>
 #include <stdio.h> 
 #include <bits/stdc++.h>
 
@@ -31,7 +31,7 @@ struct inode_ {
 
 typedef struct inode_ inode;
 
-
+string name_file_global;
 #endif //INODE_H_
 
 //hash f1
