@@ -342,55 +342,216 @@ void FileSystem::change_bit_map_addfile(FILE * partition, int number_block_free,
     fseek(partition, bit_map_start, SEEK_SET);
     fwrite(&bit_map_aux, sizeof(bit_map_aux), 1, partition);
 }
+int FileSystem::find_pai(FILE* partition, string name_pai){
+    int end_name_dir;
+    int number_dir_exist =0 ;
+    //string dir_name;
+    vector<string> sep = split(name_pai, '/');
+
+    number_dir_exist = sep.size() -1;
+    if(sep.size() - 1 == 0){
+        return 0;
+    }
+   /*  for(int i=0; i< sep.size(); i++)
+        cout<<sep[i]<<endl; */
+
+    //estou aqui então é o ultimo;
+    int number_pather;
+    //cout<<sep[number_dir_exist]<<endl;
+    fseek(partition, start_inode_map, SEEK_SET);
+    inode inode_vector[number_inodes];
+    fread(&inode_vector, sizeof(inode_vector), 1, partition);
+    for( int i =0; i<number_inodes; i++){
+        if(sep[number_dir_exist-1] == inode_vector[i].name){
+            number_pather = i;
+        }
+    }
+
+    return number_pather;
+
+}
+void FileSystem::change_size_father(FILE* partition, int np){
+     unsigned char *file;
+    //cout<<bit_map_end<<"aqui"<<endl;
+    fseek(partition, (start_inode_map+12) + np*sizeof(inode), SEEK_SET);
+    unsigned char size_ ;
+    //inode root_[number_inodes];
+
+    fread(&size_, sizeof(size_) ,1,  partition);
+    
+    //root_[0].size = size_ + 1;
+    fseek(partition,  (start_inode_map+12) + np*sizeof(inode), SEEK_SET);
+    size_ +=1;
+    //int position = start_inode_map + 12;
+    //fseek(partition, start_inode_map, SEEK_SET);
+   fwrite(&size_, sizeof(size_), 1,partition);
+}
+
+void FileSystem::add_number_inode_in_father_vet_block(FILE* partition,int pai,  int n_inode, int frist_block){
+    //cout<<"inicio vetor de block "<<vector_block_start_in_map<<endl;
+    //unsigned char  index_i = inode_index;
+    //fseek(partition, vector_block_start_in_map)
+
+    fseek(partition, start_inode_map+ sizeof(inode)*pai, SEEK_SET);
+    inode vet_ino[1];
+    fread(&vet_ino, sizeof(vet_ino), 1, partition);
+    int last_index=-1;
+    for(int i=0;i<1; i++){
+        for(int j =0; j<3; j++){
+            if(vet_ino[i].direct_blocks[j] == 0x0){
+            //cout<<"Numero do inode add no dir "<<inode_index<<endl;
+                //vet_ino[i].direct_blocks[j] = frist_block;
+                last_index = i;
+                break;
+            }
+        }
+    }
+    fseek(partition, start_inode_map+ sizeof(inode)*pai, SEEK_SET);
+    fwrite(&vet_ino, sizeof(vet_ino), 1, partition);
+
+    if(last_index == -1){
+        last_index = 3;
+    }
+
+    fseek(partition, start_inode_map+ sizeof(inode)*pai, SEEK_SET);
+    fread(&vet_ino, sizeof(vet_ino), 1, partition);
+    for(int i=0;i<1; i++){
+        for(int j =0; j<3; j++){
+            if(vet_ino[i].direct_blocks[j] != 0x0){
+            //cout<<"Numero do inode add no dir "<<inode_index<<endl;
+               fseek(partition, (vector_block_start_in_map ) + sizeof_blocks*(vet_ino[i].direct_blocks[j]), SEEK_SET);
+                char vet_block[sizeof_blocks];
+                fread(&vet_block, sizeof(vet_block), 1, partition);
+                for(int i =0; i< sizeof_blocks; i++)
+                {
+                    if(vet_block[i] == 0x0){
+                        vet_block[i] = n_inode;
+                        break;
+                    }
+                }
+                fseek(partition, (vector_block_start_in_map )+ sizeof_blocks*vet_ino[i].direct_blocks[j], SEEK_SET);
+                fwrite(&vet_block, sizeof(vet_block), 1, partition);
+            }
+        }
+    }
+
+
+  
+    
+    
+    /* }else{
+        fseek(partition, (vector_block_start_in_map ) + sizeof_blocks*(last_index-1), SEEK_SET);
+        char vet_block[sizeof_blocks];
+        fread(&vet_block, sizeof(vet_block), 1, partition);
+        for(int i =0; i< sizeof_blocks; i++)
+        {
+            if(vet_block[i] == 0x0){
+                vet_block[i] = n_inode;
+            }
+        }
+        fseek(partition, (vector_block_start_in_map )+ sizeof_blocks*last_index-1, SEEK_SET);
+        fwrite(&vet_block, sizeof(vet_block), 1, partition);
+    } */
+    
+        
+}
 
 
 void FileSystem::add_file_root(string file_name,string conteudo, FILE* partition){
 
-    //find inode free
-    int inode_free = find_inode_free(partition);
+    int number_pai = find_pai(partition, file_name);
+    if(number_pai > 0){
+        vector<string> sep = split(file_name, '/');
+
+        int number_dir_exist = sep.size() -1;
+        int inode_free = find_inode_free(partition);
+        uint8_t position_in_vet_inode = start_inode_map + inode_free* sizeof(inode);
+        int tamanho_string = conteudo.length();
+        int number_blocks_to_use = (int)ceil(tamanho_string/(float)sizeof_blocks);
+
+        int number_frist_free_block = find_block_free(partition);
+
+        fseek(partition, position_in_vet_inode, SEEK_SET);
+        inode _file;
+
+        _file.is_dir=0;
+        _file.is_used=1;
+        _file.size=conteudo.length();
+        for(int n=0;n<10;n++)
+            _file.name[n] = 0;
+        for(int s=0; s<sep[number_dir_exist].length(); s++){
+            _file.name[s] = sep[number_dir_exist][s];
+        }
+
+        for(int j= 0; j<3; j++){
+                memset(&_file.direct_blocks[j],0x00,sizeof(_file.direct_blocks[j]));
+                memset(&_file.indirect_block[j],0x00,sizeof(_file.direct_blocks[j])); 	
+                memset(&_file.double_indirect_blocks[j],0x00,sizeof(_file.double_indirect_blocks[j]));
+        }
+        fseek(partition, position_in_vet_inode, SEEK_SET);
+        fwrite(&_file, sizeof(_file), 1, partition);
+        
     
-    uint8_t position_in_vet_inode = start_inode_map + inode_free* sizeof(inode);
-    //cout<<inode_free<<"|index inode free|"<<endl;
+        int position_block_in_map =  number_frist_free_block * sizeof_blocks;
+        change_size_father(partition, number_pai);
 
-    int tamanho_string = conteudo.length();
-    int number_blocks_to_use = (int)ceil(tamanho_string/(float)sizeof_blocks);
+        change_bit_map_addfile(partition, number_frist_free_block, number_blocks_to_use);
+        add_number_inode_in_father_vet_block(partition, number_pai,inode_free, number_frist_free_block) ;
+        insert_information_in_block(partition, position_block_in_map, conteudo , number_blocks_to_use);
+        change_inode_direct(partition,inode_free,number_frist_free_block , number_blocks_to_use);
 
-    int number_frist_free_block = find_block_free(partition);
+    }else{
+        //find inode free
+    
+        int inode_free = find_inode_free(partition);
+        
+        uint8_t position_in_vet_inode = start_inode_map + inode_free* sizeof(inode);
+        //cout<<inode_free<<"|index inode free|"<<endl;
 
-    fseek(partition, position_in_vet_inode, SEEK_SET);
-    inode _file;
+        int tamanho_string = conteudo.length();
+        int number_blocks_to_use = (int)ceil(tamanho_string/(float)sizeof_blocks);
 
-    _file.is_dir=0;
-    _file.is_used=1;
-    _file.size=conteudo.length();
-    for(int n=0;n<10;n++)
-        _file.name[n] = 0;
-    for(int s=0; s<file_name.length(); s++){
-        _file.name[s] = file_name[s];
+        int number_frist_free_block = find_block_free(partition);
+
+        fseek(partition, position_in_vet_inode, SEEK_SET);
+        inode _file;
+
+        _file.is_dir=0;
+        _file.is_used=1;
+        _file.size=conteudo.length();
+        for(int n=0;n<10;n++)
+            _file.name[n] = 0;
+        for(int s=0; s<file_name.length(); s++){
+            _file.name[s] = file_name[s];
+        }
+
+        for(int j= 0; j<3; j++){
+                memset(&_file.direct_blocks[j],0x00,sizeof(_file.direct_blocks[j]));
+                memset(&_file.indirect_block[j],0x00,sizeof(_file.direct_blocks[j])); 	
+                memset(&_file.double_indirect_blocks[j],0x00,sizeof(_file.double_indirect_blocks[j]));
+        }
+        fseek(partition, position_in_vet_inode, SEEK_SET);
+        fwrite(&_file, sizeof(_file), 1, partition);
+        
+    
+        int position_block_in_map =  number_frist_free_block * sizeof_blocks;
+        
+        //cout<<"Frist block free: "<<number_frist_free_block<<endl;
+        //cout<<"Number block used: "<<number_blocks_to_use<<endl;
+        //change_root_direct_block(partition, inode_free);
+        change_size_root(partition);
+
+        change_bit_map_addfile(partition, number_frist_free_block, number_blocks_to_use);
+        add_number_inode_dir_in_vet_block(partition, inode_free);
+        insert_information_in_block(partition, position_block_in_map, conteudo , number_blocks_to_use);
+        change_inode_direct(partition,inode_free,number_frist_free_block , number_blocks_to_use);
+
+ 
     }
-
-    for(int j= 0; j<3; j++){
-            memset(&_file.direct_blocks[j],0x00,sizeof(_file.direct_blocks[j]));
-			memset(&_file.indirect_block[j],0x00,sizeof(_file.direct_blocks[j])); 	
-			memset(&_file.double_indirect_blocks[j],0x00,sizeof(_file.double_indirect_blocks[j]));
-    }
-    fseek(partition, position_in_vet_inode, SEEK_SET);
-    fwrite(&_file, sizeof(_file), 1, partition);
+    //find_pai(partition, file_name);
     
-   
-    int position_block_in_map =  number_frist_free_block * sizeof_blocks;
+
     
-    //cout<<"Frist block free: "<<number_frist_free_block<<endl;
-    //cout<<"Number block used: "<<number_blocks_to_use<<endl;
-    //change_root_direct_block(partition, inode_free);
-    change_size_root(partition);
-
-    change_bit_map_addfile(partition, number_frist_free_block, number_blocks_to_use);
-    add_number_inode_dir_in_vet_block(partition, inode_free);
-    insert_information_in_block(partition, position_block_in_map, conteudo , number_blocks_to_use);
-    change_inode_direct(partition,inode_free,number_frist_free_block , number_blocks_to_use);
-
-
     
 }
 
@@ -410,12 +571,31 @@ void FileSystem::change_inode_direct(FILE * partition, int number_inode, int fri
             }else{
                 if(index == 2){
                     inode_.direct_blocks[index] =0x0;
-                }else{
+                }else{  
                     inode_.direct_blocks[index] = frist_address+index;
                 }
                 
 
             }
+        }
+    }
+    fseek(partition, address_inode, SEEK_SET);
+    fwrite(&inode_, sizeof(inode_), 1, partition);
+                    
+}
+
+
+void FileSystem::change_inode_direct_dir(FILE * partition, int number_inode, int frist_address){
+    int address_inode = number_inode*sizeof(inode) + start_inode_map;
+
+
+    fseek(partition, address_inode, SEEK_SET);
+    inode inode_;
+    fread(&inode_, sizeof(inode_), 1, partition);
+    for(int index=0; index<3; index++){
+        if(inode_.direct_blocks[index] == 0x00){
+            inode_.direct_blocks[index] = frist_address;
+            break;
         }
     }
     fseek(partition, address_inode, SEEK_SET);
@@ -618,6 +798,7 @@ void FileSystem::addDir(FILE* partition, string name_dir){
     
     //cout<<"This is the next block free in vector blocks"<<next_block_free<<endl;
     change_bit_map_adddir(partition, next_block_free, 1);
+    change_inode_direct_dir(partition,number_inode_free,next_block_free);
     fclose(partition);
 }
 
@@ -654,27 +835,41 @@ void printSha256(string name_system){
 }
 void FileSystem::command_inputs(){
 
-   
-        string sentence;
+   string sentence;
         //char sentence[25];
         const char delimiter =' ';
         getline(cin,sentence);
- 
-	// Spliting the string by ''
+        //cout<<sentence<<endl;
+	    // Spliting the string by ''
         vector<string> sep = split(sentence, ' ');
-        for(int i = 0; i < sep.size() ; i++)
-            cout<<sep[i]<<endl;
-
         
-      /*   vector<string> sep =   split2(sentence, delimiter);*/
+        //for(int i = 0; i < sep.size() ; i++)
+        //    cout<<sep[i]<<endl;
+        sep[1] = sep[1].erase(0, 1);
+        //cout<<sep[1]<<endl;
+        /* for(int i = 0; i < sep.size() ; i++)
+            cout<<sep[i]<<endl */;
+
+        //cout<<sep[0]<<endl;
+         /*   vector<string> sep =   split2(sentence, delimiter);*/
         
         int len_vector = sep.size();
-        if(len_vector == 3){
-            name_dir_create = sep[2];
-        }
         if(len_vector == 4){
-            name_file_to_add = sep[2];
-            info_to_insert_file = sep[3];
+            if(sep[3][0] == '/'){
+                    sep[3] = sep[3].erase(0, 1);
+
+            }
+            name_dir_create = sep[3].erase(sep[3].size() -1);
+        
+        }
+        if(len_vector == 5){
+            if(sep[3][0] == '/'){
+                    sep[3] = sep[3].erase(0, 1);
+
+            }
+            name_file_to_add = sep[3];
+            info_to_insert_file =sep[4].erase(sep[4].size() -1);// sep[3].erase(sep[3].size() - 1);
+            //sep[3] =  sep[3].erase(sep[3].size() - 1);
 
         }
 
@@ -686,26 +881,18 @@ void FileSystem::command_inputs(){
             cout<<"addDIr FileSystemName.bin DirName"<<endl;
             exit(0);
         }
-        file_system_name_create = sep[1];
-        name_file_global = sep[1];
         
-
+        file_system_name_create = sep[2];
+        name_file_global = sep[2];
+        
+        //cout<<"terminou"<<endl;
+       // cout<<info_to_insert_file<<endl;
         //create file again 
         //create_file(file_system_name_create);
-
-        if(sep[0].compare("init") == 0){
-            char name_file_bin[100];
-            cout<<file_system_name_create.length()<<endl;
-            //name_file_bin  = (char*)malloc(sizeof(char)*file_system_name_create.length());
-                
-            for(int i=0;i<file_system_name_create.length();i++ ){
-                name_file_bin[i] = file_system_name_create[i] ;
-            }
-
-            //name_file_bin[strlen(name_file_bin)+1] = '\0';
+        //for(int i = 0; i < sep.size() ; i++)
+        //    cout<<sep[i]<<endl;
             
-            cout<<name_file_bin<<endl;
-            cout<<"Aqui"<<endl;
+        if(sep[1].compare("init") == 0){
             
             FILE *file_system_name = fopen(file_system_name_create.c_str(), "wb+");
             if(file_system_name == NULL)
@@ -713,59 +900,34 @@ void FileSystem::command_inputs(){
                 file_system_name = fopen(file_system_name_create.c_str(), "wb+");
 
             }
-            init(file_system_name,atoi(sep[3].c_str()), atoi(sep[4].c_str()), atoi(sep[2].c_str()));
-            //fclose(file_system_name);
-            //printSha256(file_system_name_create);
-            //return;
-            //exit(0);
-        }else if(sep[0].compare("addDir") == 0){
-            /* int len = 0;
-            char name_file_bin[file_system_name_create.length()];
+            /* cout<<"numero de blocks"<<endl;
+            cout<<atoi((sep[4].erase(sep[5].size() - 1)).c_str())<<endl;
+            cout<<"numero de inodes"<<endl;
+            cout<<atoi((sep[5].erase(sep[5].size() - 1)).c_str())<<endl;
+            cout<<"numero de bytes"<<endl;
+            cout<<atoi((sep[3]).c_str())<<endl;
+ */
+            sep[5]  =sep[5].erase(sep[5].size() - 1);
 
-            for(int i=0;i<file_system_name_create.length();i++ ){
-                name_file_bin[i] = file_system_name_create[i] ;
-                len++;
-            } 
-            if (name_file_bin[strlen(name_file_bin)-1] == 10)
-                name_file_bin[strlen(name_file_bin)-1] = 0x00; */
-            //cout<<name_file_bin<<endl;
-            //
+            init(file_system_name,atoi(sep[4].c_str()), atoi((sep[5]).c_str()), atoi(sep[3].c_str()));
+
+
+        }else if(sep[1].compare("addDir") == 0){
+            
             FILE *file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             if(file_system_name == NULL){
                 file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             }
 
             addDir(file_system_name, name_dir_create);
-            //fclose(file_system_name);
-
-            //printSha256(name_file_bin);
-            //exit(0);
-        }else if(sep[0].compare("add") == 0){
-            /* int len = 0;
-            char name_file_bin[file_system_name_create.length()];
-
-            for(int i=0;i<file_system_name_create.length();i++ ){
-                name_file_bin[i] = file_system_name_create[i] ;
-                len++;
-            } 
-            if (name_file_bin[strlen(name_file_bin)-1] == 10)
-                name_file_bin[strlen(name_file_bin)-1] = 0x00;
-            //cout<<name_file_bin<<endl;
-            //
-            name_file_bin[strlen(name_file_bin)] = '\0'; */
+            
+        }else if(sep[1].compare("addFile") == 0){
+            
             FILE* file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             if(file_system_name == NULL){
                 file_system_name = fopen(file_system_name_create.c_str(), "rb+");
             }
             addFile(file_system_name, name_file_to_add, info_to_insert_file);
-            //fclose(file_system_name);
-            //printSha256(name_file_bin);
-            //exit(0);
-        }else if(sep[0].compare("exit")){
-            exit(0);
-        }else{
-            cout<<"Command not found"<<endl;
-        } 
-    //printSha256(file_system_name_create);
-   return;  
+            
+        }
 }

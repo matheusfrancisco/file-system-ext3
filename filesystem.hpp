@@ -91,7 +91,11 @@ class FileSystem
         void convert_string_to_char();
         //void printSha256(string path);
         void printSha256();
+        void change_inode_direct_dir(FILE * partition, int number_inode, int frist_address);
+        int find_pai(FILE * partition, string name_pai);
+        //void find_pai(FILE * partition , string name_pai);
         static vector<string> split(string str, char delimiter);
-        
+        void change_size_father(FILE* partition, int np);
+        void add_number_inode_in_father_vet_block(FILE* partition, int pai,int n_inode, int frist_block);
 };
 #endif
